@@ -42,7 +42,7 @@ class MachineState:
                      self.e3.succeed()  
 
             if self.state == '3':
-                self.z =  np.sin(self.x)  # Create an oscillation effect
+                self.z = 0
                 self.x += 0.1
                     
                     
