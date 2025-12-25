@@ -6,21 +6,32 @@ from mpl_toolkits.mplot3d import Axes3D
 
 class MachineState:
     def __init__(self, env):
+        
         #ENVIRONEMENT
         self.env = env
+
         #CONDITION INITIAL
         self.state = '0' 
         self.x = 0 
-        self.z = 50  
+        self.xdot=0
+        self.z = 50 
+        self.zdot=0 
         self.v = 0
-        self.theta = 0 
+        self.vdot=0
+        self.theta = 0
+        self.thetadot=0
+
         self.m=10
         self.Rx=5
         self.U=10
-        self.x_data = []  
+
+        self.x_data = []
+        self.xdot_data = []   
         self.z_data = [] 
+        self.zdot_data = [] 
         self.v_data = []  
-        self.theta_data = []  
+        self.theta_data = [] 
+
         #EVENEMENT
         self.e1 = Event(env)
         self.e2 = Event(env)  
@@ -33,17 +44,17 @@ class MachineState:
 
             match self.state:
                 case'0':
-                    self.x+=self.v
-                    self.z =self.z
-                    self.v +=(1/self.m)*(self.U-self.Rx)
+                    self.xdot+=self.v
+                    self.zdot =0
+                    self.vdot+=(1/self.m)*(self.U-self.Rx)
                     self.theta=0
                     if self.x>=20 :
                         self.e1.succeed()
 
                 case'1':
                     self.theta=-1
-                    self.x+=self.v*np.cos(self.theta)
-                    self.z +=self.v*np.sin(self.theta)
+                    self.xdot+=self.v*np.cos(self.theta)
+                    self.zdot +=self.v*np.sin(self.theta)
                     self.v +=(1/self.m)*((self.U-self.Rx)-(self.m*9.81*np.sin(self.theta)))
                     if self.x>=50 :
                         self.e2.succeed()
@@ -54,10 +65,7 @@ class MachineState:
                     self.z +=self.v*np.sin(self.theta)
                     self.v +=0
                     
-                case'3':
-                    a=0
-                case _:
-                    a=0
+            
 
             self.x_data.append((self.env.now, self.x))
             self.z_data.append((self.env.now, self.z))
