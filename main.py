@@ -13,27 +13,27 @@ class MachineState:
         #CONDITION INITIAL
         self.mode = '0' 
 
-        
-        self.x = 0 
-        self.xdot=0
-        self.z = 50 
-        self.zdot=0 
-        self.v = 0
-        self.vdot=0
-      
-
-
+        self.x_=0
+        self.z_=50
+        self.Vx=50
+        self.Vz=0
+        self.Ax=0
+        self.Az=0
+       
+     
         self.m=10
         self.Rx=5
         self.U=10
+        self.Rz=5
 
 
-        self.x_data = []
-        self.xdot_data = []   
-        self.z_data = [] 
-        self.zdot_data = [] 
-        self.v_data = []
-        self.vdot_data = []    
+      
+        self.x_data=[]
+        self.z_data=[]
+        self.Vx_data=[]
+        self.Vz_data=[]
+        self.Ax_data=[]
+        self.Az_data=[]  
     
         #EVENEMENT
         self.e1 = Event(env)
@@ -43,30 +43,22 @@ class MachineState:
         self.e5 = Event(env) 
      
     def dynamique_continu(self):
+
         while True:
 
             match self.mode:
                 case'0':
-                    self.xdot+=self.v
-                    self.zdot =0
-                    self.vdot+=(1/self.m)*(self.U-self.Rx)
-                    self.thetadot =0#à modifié
+                    self.Vx=self.Vx
+                    self.Vz=self.Vz
+                    self.Ax=(1/self.m)*(self.U-self.Rx)
+                    self.Az=(1/self.m)*(self.Rz-self.m*9.81)
+                    self.Vx+=self.x
                     if self.x>=20 :
                         self.e1.succeed()
 
-                case'1':
-                    self.theta=-1
-                    self.xdot+=self.v*np.cos(self.theta)
-                    self.zdot +=self.v*np.sin(self.theta)
-                    self.v +=(1/self.m)*((self.U-self.Rx)-(self.m*9.81*np.sin(self.theta)))
-                    if self.x>=50 :
-                        self.e2.succeed()
-                 
-                case'2':
-                    self.theta=0
-                    self.x+=self.v*np.cos(self.theta)
-                    self.z +=self.v*np.sin(self.theta)
-                    self.v +=0
+                    
+            
+                    
                     
             
 
