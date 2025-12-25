@@ -46,29 +46,30 @@ class Hybrid_SYSTEM:
 
             match self.mode:
                 case'0':
-                    self.x=self.env.now
-                    self.z=50
-                    self.Vx=5
+                    self.x_+=1
+                    self.z_=self.z_
+                    self.Vx=1
                     self.Vz=0
-                    if self.x>=20:
+                    if self.x_>=20:
                         self.e1.succeed()
+                    
 
                 case'1':
-                    self.x=self.env.now
-                    self.z-=self.x
+                    self.x_+=1
+                    self.z_ -=1
                     self.Vx=5
                     self.Vz=-3
-                    if self.z==0:
+                    if self.z_==0:
                         self.e2.succeed()
-
+                        
                 case'2':
-                    self.x=5*self.env.now
-                    self.z=0
+                    self.x_+=1
+                    self.z_+=(1/self.x_)*5
                     self.Vx=5
                     self.Vz=0
     
-            self.x_data.append((self.env.now, self.x))
-            self.z_data.append((self.env.now, self.z))
+            self.x_data.append((self.env.now, self.x_))
+            self.z_data.append((self.env.now, self.z_))
             
             yield self.env.timeout(1) 
 
@@ -77,22 +78,22 @@ class Hybrid_SYSTEM:
         while True:
             match self.mode:
                 case '0':
-                    print(f'Time: [{self.env.now}] --> mode[0] [x: {self.x:.2f} z: {self.z:.2f}]')
+                    print(f'Time: [{self.env.now}] --> mode[0] [x: {self.x_:.2f} z: {self.z_:.2f}]')
                     yield self.e1
                     self.mode = '1'
 
                 case '1':
-                    print(f'Time: [{self.env.now}] --> mode[1] [x: {self.x:.2f} z: {self.z:.2f}]')
+                    print(f'Time: [{self.env.now}] --> mode[1] [x: {self.x_:.2f} z: {self.z_:.2f}]')
                     yield self.e2
                     self.mode = '2'
 
                 case '2':
-                    print(f'Time: [{self.env.now}] --> mode[2] [x: {self.x:.2f} z: {self.z:.2f}]')
+                    print(f'Time: [{self.env.now}] --> mode[2] [x: {self.x_:.2f} z: {self.z_:.2f}]')
                     yield self.e3
                     self.mode = '3'
 
                 case '3':
-                    print(f'Time: [{self.env.now}] --> state[3] [x: {self.x:.2f} z: {self.z:.2f}]')
+                    print(f'Time: [{self.env.now}] --> state[3] [x: {self.x_:.2f} z: {self.z_:.2f}]')
                     yield self.env.timeout(1)
             
             
