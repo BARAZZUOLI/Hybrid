@@ -25,6 +25,8 @@ class Hybrid_SYSTEM:
         self.Rx=5
         self.U=10
         self.Rz=5
+        self.z_before=0
+        self.x_before=0
 
         self.x_data=[]
         self.z_data=[]
@@ -32,6 +34,8 @@ class Hybrid_SYSTEM:
         self.Vz_data=[]
         self.Ax_data=[]
         self.Az_data=[]  
+
+        self.flag=0
     
         #EVENEMENT
         self.e1 = Event(env)
@@ -51,26 +55,29 @@ class Hybrid_SYSTEM:
                     self.Vx=1
                     self.Vz=0
                     if self.x_>=20:
-                        self.e1.succeed()
-                    
-
+                        self.e1.succeed() 
                 case'1':
                     self.x_+=1
                     self.z_ -=1
                     self.Vx=5
                     self.Vz=-3
-                    if self.z_==0:
+                    if self.z_==5:
                         self.e2.succeed()
                         
                 case'2':
                     self.x_+=1
-                    self.z_+=(1/self.x_)*5
+                    self.z_+=np.cos(self.z_*10)
                     self.Vx=5
                     self.Vz=0
-    
+
+            self.flag+=1
             self.x_data.append((self.env.now, self.x_))
             self.z_data.append((self.env.now, self.z_))
-            
+            self.x_before=(self.z_data[self.flag-1][1])
+            self.z_before=(self.z_data[self.flag-1][1])
+           
+          
+
             yield self.env.timeout(1) 
 
     def automate(self):
