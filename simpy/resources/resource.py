@@ -28,6 +28,7 @@ processes can define a request priority, and a :class:`PreemptiveResource`
 whose resource users can be preempted by requests with a higher priority.
 
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, List, Optional, Type
@@ -158,7 +159,7 @@ class SortedQueue(list):
 
         """
         if self.maxlen is not None and len(self) >= self.maxlen:
-            raise RuntimeError('Cannot append event. Queue is full.')
+            raise RuntimeError("Cannot append event. Queue is full.")
 
         super().append(item)
         super().sort(key=lambda e: e.key)
@@ -271,9 +272,7 @@ class PreemptiveResource(PriorityResource):
 
     users: List[PriorityRequest]  # type: ignore
 
-    def _do_put(  # type: ignore[override]
-        self, event: PriorityRequest
-    ) -> None:
+    def _do_put(self, event: PriorityRequest) -> None:  # type: ignore[override]
         if len(self.users) >= self.capacity and event.preempt:
             # Check if we can preempt another process
             preempt = sorted(self.users, key=lambda e: e.key)[-1]

@@ -6,6 +6,7 @@ Base classes of for SimPy's shared resource types.
 These events are triggered once the request has been completed.
 
 """
+
 from __future__ import annotations
 
 from typing import (
@@ -26,10 +27,10 @@ from simpy.events import Event, Process
 if TYPE_CHECKING:
     from types import TracebackType
 
-ResourceType = TypeVar('ResourceType', bound='BaseResource')
+ResourceType = TypeVar("ResourceType", bound="BaseResource")
 
 
-class Put(Event, ContextManager['Put'], Generic[ResourceType]):
+class Put(Event, ContextManager["Put"], Generic[ResourceType]):
     """Generic event for requesting to put something into the *resource*.
 
     This event (and all of its subclasses) can act as context manager and can
@@ -80,7 +81,7 @@ class Put(Event, ContextManager['Put'], Generic[ResourceType]):
             self.resource.put_queue.remove(self)  # pyright: ignore
 
 
-class Get(Event, ContextManager['Get'], Generic[ResourceType]):
+class Get(Event, ContextManager["Get"], Generic[ResourceType]):
     """Generic event for requesting to get something from the *resource*.
 
     This event (and all of its subclasses) can act as context manager and can
@@ -131,8 +132,8 @@ class Get(Event, ContextManager['Get'], Generic[ResourceType]):
             self.resource.get_queue.remove(self)  # pyright: ignore
 
 
-PutType = TypeVar('PutType', bound=Put)
-GetType = TypeVar('GetType', bound=Get)
+PutType = TypeVar("PutType", bound=Put)
+GetType = TypeVar("GetType", bound=Get)
 
 
 class BaseResource(Generic[PutType, GetType]):
@@ -233,7 +234,7 @@ class BaseResource(Generic[PutType, GetType]):
             if not put_event.triggered:
                 idx += 1
             elif self.put_queue.pop(idx) != put_event:
-                raise RuntimeError('Put queue invariant violated')
+                raise RuntimeError("Put queue invariant violated")
 
             if not proceed:
                 break
@@ -273,7 +274,7 @@ class BaseResource(Generic[PutType, GetType]):
             if not get_event.triggered:
                 idx += 1
             elif self.get_queue.pop(idx) != get_event:
-                raise RuntimeError('Get queue invariant violated')
+                raise RuntimeError("Get queue invariant violated")
 
             if not proceed:
                 break

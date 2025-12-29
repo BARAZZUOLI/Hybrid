@@ -8,6 +8,7 @@ retrieved from the store in the order they were put in. The *get* requests of a
 matching a given criterion.
 
 """
+
 from __future__ import annotations
 
 from heapq import heappop, heappush
@@ -75,7 +76,7 @@ class Store(base.BaseResource):
 
     """
 
-    def __init__(self, env: Environment, capacity: Union[float, int] = float('inf')):
+    def __init__(self, env: Environment, capacity: Union[float, int] = float("inf")):
         if capacity <= 0:
             raise ValueError('"capacity" must be > 0.')
 
@@ -86,9 +87,7 @@ class Store(base.BaseResource):
 
     if TYPE_CHECKING:
 
-        def put(  # type: ignore[override]
-            self, item: Any
-        ) -> StorePut:
+        def put(self, item: Any) -> StorePut:  # type: ignore[override]
             """Request to put *item* into the store."""
             return StorePut(self, item)
 
@@ -127,9 +126,7 @@ class PriorityItem(NamedTuple):
     #: The item to be stored.
     item: Any
 
-    def __lt__(  # type: ignore[override]
-        self, other: PriorityItem
-    ) -> bool:
+    def __lt__(self, other: PriorityItem) -> bool:  # type: ignore[override]
         return self.priority < other.priority
 
 

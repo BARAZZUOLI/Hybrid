@@ -2,6 +2,7 @@
 SimPy specific exceptions.
 
 """
+
 from __future__ import annotations
 
 from typing import Any, Optional
@@ -27,7 +28,7 @@ class Interrupt(SimPyException):
         super().__init__(cause)
 
     def __str__(self) -> str:
-        return f'{self.__class__.__name__}({self.cause!r})'
+        return f"{self.__class__.__name__}({self.cause!r})"
 
     @property
     def cause(self) -> Optional[Any]:

@@ -13,6 +13,7 @@ used, there are several specialized subclasses of it.
     ~simpy.events.AllOf
 
 """
+
 from __future__ import annotations
 
 from typing import (
@@ -40,7 +41,7 @@ if TYPE_CHECKING:
 PENDING: object = object()
 """Unique object to identify pending values of events."""
 
-EventPriority = NewType('EventPriority', int)
+EventPriority = NewType("EventPriority", int)
 
 URGENT: EventPriority = EventPriority(0)
 """Priority of interrupts and process initialization events."""
@@ -92,11 +93,11 @@ class Event:
     def __repr__(self) -> str:
         """Return the description of the event (see :meth:`_desc`) with the id
         of the event."""
-        return f'<{self._desc()} object at {id(self):#x}>'
+        return f"<{self._desc()} object at {id(self):#x}>"
 
     def _desc(self) -> str:
         """Return a string *Event()*."""
-        return f'{self.__class__.__name__}()'
+        return f"{self.__class__.__name__}()"
 
     @property
     def triggered(self) -> bool:
@@ -136,7 +137,7 @@ class Event:
         processed by the :class:`~simpy.core.Environment`.
 
         """
-        return hasattr(self, '_defused')
+        return hasattr(self, "_defused")
 
     @defused.setter
     def defused(self, value: bool) -> None:
@@ -152,7 +153,7 @@ class Event:
 
         """
         if self._value is PENDING:
-            raise AttributeError(f'Value of {self} is not yet available')
+            raise AttributeError(f"Value of {self} is not yet available")
         return self._value
 
     def trigger(self, event: Event) -> None:
@@ -175,7 +176,7 @@ class Event:
 
         """
         if self._value is not PENDING:
-            raise RuntimeError(f'{self} has already been triggered')
+            raise RuntimeError(f"{self} has already been triggered")
 
         self._ok = True
         self._value = value
@@ -192,9 +193,9 @@ class Event:
 
         """
         if self._value is not PENDING:
-            raise RuntimeError(f'{self} has already been triggered')
+            raise RuntimeError(f"{self} has already been triggered")
         if not isinstance(exception, BaseException):
-            raise TypeError(f'{exception} is not an exception.')
+            raise TypeError(f"{exception} is not an exception.")
         self._ok = False
         self._value = exception
         self.env.schedule(self)
@@ -212,7 +213,7 @@ class Event:
         return Condition(self.env, Condition.any_events, [self, other])
 
 
-EventType = TypeVar('EventType', bound=Event)
+EventType = TypeVar("EventType", bound=Event)
 EventCallback = Callable[[EventType], None]
 EventCallbacks = List[EventCallback]
 
@@ -233,7 +234,7 @@ class Timeout(Event):
         value: Optional[Any] = None,
     ):
         if delay < 0:
-            raise ValueError(f'Negative delay {delay}')
+            raise ValueError(f"Negative delay {delay}")
         # NOTE: The following initialization code is inlined from
         # Event.__init__() for performance reasons.
         self.env = env
@@ -245,8 +246,8 @@ class Timeout(Event):
 
     def _desc(self) -> str:
         """Return a string *Timeout(delay[, value=value])*."""
-        value_str = '' if self._value is None else f', value={self.value}'
-        return f'{self.__class__.__name__}({self._delay}{value_str})'
+        value_str = "" if self._value is None else f", value={self.value}"
+        return f"{self.__class__.__name__}({self._delay}{value_str})"
 
 
 class Initialize(Event):
@@ -288,10 +289,10 @@ class Interruption(Event):
         self._defused = True
 
         if process._value is not PENDING:
-            raise RuntimeError(f'{process} has terminated and cannot be interrupted.')
+            raise RuntimeError(f"{process} has terminated and cannot be interrupted.")
 
         if process is self.env.active_process:
-            raise RuntimeError('A process is not allowed to interrupt itself.')
+            raise RuntimeError("A process is not allowed to interrupt itself.")
 
         self.process = process
         self.env.schedule(self, URGENT)
@@ -330,7 +331,7 @@ class Process(Event):
     """
 
     def __init__(self, env: Environment, generator: ProcessGenerator):
-        if not hasattr(generator, 'throw'):
+        if not hasattr(generator, "throw"):
             # Implementation note: Python implementations differ in the
             # generator types they provide. Cython adds its own generator type
             # in addition to the CPython type, which renders a type check
@@ -338,7 +339,7 @@ class Process(Event):
             # name instead of type and optimistically assume that all objects
             # with a ``throw`` attribute are generators.
             # Remove this workaround if it causes issues in production!
-            raise ValueError(f'{generator} is not a generator.')
+            raise ValueError(f"{generator} is not a generator.")
 
         # NOTE: The following initialization code is inlined from
         # Event.__init__() for performance reasons.
@@ -352,7 +353,7 @@ class Process(Event):
 
     def _desc(self) -> str:
         """Return a string *Process(process_func_name)*."""
-        return f'{self.__class__.__name__}({self.name})'
+        return f"{self.__class__.__name__}({self.name})"
 
     @property
     def target(self) -> Event:
@@ -436,12 +437,12 @@ class Process(Event):
             except AttributeError:
                 # Our optimism didn't work out, figure out what went wrong and
                 # inform the user.
-                if hasattr(event, 'callbacks'):
+                if hasattr(event, "callbacks"):
                     raise
 
                 msg = f'Invalid yield value "{event}"'
                 descr = _describe_frame(self._generator.gi_frame)
-                raise RuntimeError(f'\n{descr}{msg}') from None
+                raise RuntimeError(f"\n{descr}{msg}") from None
 
         self._target = event
         self.env._active_proc = None
@@ -473,7 +474,7 @@ class ConditionValue:
             return NotImplemented
 
     def __repr__(self) -> str:
-        return f'<ConditionValue {self.todict()}>'
+        return f"<ConditionValue {self.todict()}>"
 
     def __iter__(self) -> Iterator[Event]:
         return self.keys()
@@ -533,7 +534,7 @@ class Condition(Event):
         for event in self._events:
             if self.env != event.env:
                 raise ValueError(
-                    'It is not allowed to mix events from different environments'
+                    "It is not allowed to mix events from different environments"
                 )
 
         # Check if the condition is met for each processed event. Attach
@@ -551,7 +552,7 @@ class Condition(Event):
 
     def _desc(self) -> str:
         """Return a string *Condition(evaluate, [events])*."""
-        return f'{self.__class__.__name__}({self._evaluate.__name__}, {self._events})'
+        return f"{self.__class__.__name__}({self._evaluate.__name__}, {self._events})"
 
     def _populate_value(self, value: ConditionValue) -> None:
         """Populate the *value* by recursively visiting all nested
@@ -647,6 +648,6 @@ def _describe_frame(frame: FrameType) -> str:
             if no + 1 == lineno:
                 return (
                     f'  File "{filename}", line {lineno}, in {name}\n'
-                    f'    {line.strip()}\n'
+                    f"    {line.strip()}\n"
                 )
         return f'  File "{filename}", line {lineno}, in {name}\n'

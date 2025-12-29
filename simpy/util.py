@@ -5,6 +5,7 @@ A collection of utility functions:
    start_delayed
 
 """
+
 from typing import Generator
 
 from simpy.core import Environment, SimTime
@@ -36,7 +37,7 @@ def start_delayed(
 
     """
     if delay <= 0:
-        raise ValueError(f'delay(={delay}) must be > 0.')
+        raise ValueError(f"delay(={delay}) must be > 0.")
 
     def starter() -> Generator[Event, None, Process]:
         yield env.timeout(delay)
@@ -67,4 +68,4 @@ def subscribe_at(event: Event) -> None:
     if event.callbacks is not None:
         env.process(signaller(event, subscriber))
     else:
-        raise RuntimeError(f'{event} has already terminated.')
+        raise RuntimeError(f"{event} has already terminated.")

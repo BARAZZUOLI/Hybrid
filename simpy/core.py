@@ -2,6 +2,7 @@
 Core components for event-discrete simulation environments.
 
 """
+
 from __future__ import annotations
 
 from heapq import heappop, heappush
@@ -32,9 +33,9 @@ from simpy.events import (
     Timeout,
 )
 
-Infinity: float = float('inf')  #: Convenience alias for infinity
+Infinity: float = float("inf")  #: Convenience alias for infinity
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class BoundClass(Generic[T]):
@@ -103,9 +104,9 @@ class Environment:
 
     def __init__(self, initial_time: SimTime = 0):
         self._now = initial_time
-        self._queue: List[
-            Tuple[SimTime, EventPriority, int, Event]
-        ] = []  # The list of all currently scheduled events.
+        self._queue: List[Tuple[SimTime, EventPriority, int, Event]] = (
+            []
+        )  # The list of all currently scheduled events.
         self._eid = count()  # Counter for event IDs
         self._active_proc: Optional[Process] = None
 
@@ -195,7 +196,7 @@ class Environment:
         for callback in callbacks:
             callback(event)
 
-        if not event._ok and not hasattr(event, '_defused'):
+        if not event._ok and not hasattr(event, "_defused"):
             # The event has failed and has not been defused. Crash the
             # environment.
             # Create a copy of the failure exception with a new traceback.
@@ -226,7 +227,7 @@ class Environment:
 
                 if at <= self.now:
                     raise ValueError(
-                        f'until ({at}) must be greater than the current simulation time'
+                        f"until ({at}) must be greater than the current simulation time"
                     )
 
                 # Schedule the event before all regular timeouts.
@@ -251,6 +252,6 @@ class Environment:
                 assert not until.triggered
                 raise RuntimeError(
                     f'No scheduled events left but "until" event was not '
-                    f'triggered: {until}'
+                    f"triggered: {until}"
                 ) from None
         return None

@@ -7,6 +7,7 @@ Tankers increase and refuelled cars decrease the amount of gas in the station's
 fuel tanks.
 
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional, Union
@@ -27,7 +28,7 @@ class ContainerPut(base.Put):
 
     def __init__(self, container: Container, amount: ContainerAmount):
         if amount <= 0:
-            raise ValueError(f'amount(={amount}) must be > 0.')
+            raise ValueError(f"amount(={amount}) must be > 0.")
         self.amount = amount
         """The amount of matter to be put into the container."""
 
@@ -44,7 +45,7 @@ class ContainerGet(base.Get):
 
     def __init__(self, container: Container, amount: ContainerAmount):
         if amount <= 0:
-            raise ValueError(f'amount(={amount}) must be > 0.')
+            raise ValueError(f"amount(={amount}) must be > 0.")
         self.amount = amount
         """The amount of matter to be taken out of the container."""
 
@@ -71,7 +72,7 @@ class Container(base.BaseResource):
     def __init__(
         self,
         env: Environment,
-        capacity: ContainerAmount = float('inf'),
+        capacity: ContainerAmount = float("inf"),
         init: ContainerAmount = 0,
     ):
         if capacity <= 0:

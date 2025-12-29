@@ -8,6 +8,7 @@ The following tables list all the available components in this module.
 {toc}
 
 """
+
 from __future__ import annotations
 
 import importlib.metadata
@@ -22,53 +23,53 @@ from simpy.resources.store import FilterStore, PriorityItem, PriorityStore, Stor
 from simpy.rt import RealtimeEnvironment
 
 __all__ = [
-    'AllOf',
-    'AnyOf',
-    'Container',
-    'Environment',
-    'Event',
-    'FilterStore',
-    'Interrupt',
-    'PreemptiveResource',
-    'PriorityItem',
-    'PriorityResource',
-    'PriorityStore',
-    'Process',
-    'RealtimeEnvironment',
-    'Resource',
-    'SimPyException',
-    'Store',
-    'Timeout',
+    "AllOf",
+    "AnyOf",
+    "Container",
+    "Environment",
+    "Event",
+    "FilterStore",
+    "Interrupt",
+    "PreemptiveResource",
+    "PriorityItem",
+    "PriorityResource",
+    "PriorityStore",
+    "Process",
+    "RealtimeEnvironment",
+    "Resource",
+    "SimPyException",
+    "Store",
+    "Timeout",
 ]
 
 
 def _compile_toc(
     entries: Tuple[Tuple[str, Tuple[Type, ...]], ...],
-    section_marker: str = '=',
+    section_marker: str = "=",
 ) -> str:
     """Compiles a list of sections with objects into sphinx formatted
     autosummary directives."""
-    toc = ''
+    toc = ""
     for section, objs in entries:
-        toc += '\n\n'
-        toc += f'{section}\n'
-        toc += f'{section_marker * len(section)}\n\n'
-        toc += '.. autosummary::\n\n'
+        toc += "\n\n"
+        toc += f"{section}\n"
+        toc += f"{section_marker * len(section)}\n\n"
+        toc += ".. autosummary::\n\n"
         for obj in objs:
-            toc += f'    ~{obj.__module__}.{obj.__name__}\n'
+            toc += f"    ~{obj.__module__}.{obj.__name__}\n"
     return toc
 
 
 _toc = (
     (
-        'Environments',
+        "Environments",
         (
             Environment,
             RealtimeEnvironment,
         ),
     ),
     (
-        'Events',
+        "Events",
         (
             Event,
             Timeout,
@@ -79,7 +80,7 @@ _toc = (
         ),
     ),
     (
-        'Resources',
+        "Resources",
         (
             Resource,
             PriorityResource,
@@ -91,7 +92,7 @@ _toc = (
             FilterStore,
         ),
     ),
-    ('Exceptions', (SimPyException, Interrupt)),
+    ("Exceptions", (SimPyException, Interrupt)),
 )
 
 # Use the _toc to keep the documentation and the implementation in sync.
@@ -100,7 +101,7 @@ if __doc__:
     assert set(__all__) == {obj.__name__ for _, objs in _toc for obj in objs}
 
 try:
-    __version__ = importlib.metadata.version('simpy')
+    __version__ = importlib.metadata.version("simpy")
 except importlib.metadata.PackageNotFoundError:
     # package is not installed
     pass
