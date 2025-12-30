@@ -50,11 +50,10 @@ https://github.com/fpelogia/drone-simulation.git
 ########################################################################
 
 from simpy import *
-import random
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.integrate import odeint, solve_ivp
-from scipy.differentiate import derivative
+from scipy.integrate import  solve_ivp
+import matplotlib.animation as animation
 
 
 class Hybrid_SYSTEM:
@@ -133,7 +132,7 @@ class Hybrid_SYSTEM:
     def event_function(self, t, y, params):
         match self.mode:
             case "0":
-                return y[1] - 50
+                return y[1] - 3000
                
     event_function.terminal = True
     event_function.direction = 1
@@ -141,8 +140,8 @@ class Hybrid_SYSTEM:
     def u(self):
         match self.mode:
             case "0":
-                F1 = 50.001
-                F2 = 50
+                F1 = 50
+                F2 = 50.001
             case "1":
                 F1 =50.001 
                 F2 = 50
@@ -292,30 +291,35 @@ class Hybrid_SYSTEM:
 
             yield self.env.timeout(1)
 
+
 def plot_results(t, x, y, theta):
+
     fig, axs = plt.subplots(2, 2, figsize=(10, 10))
     plt.subplots_adjust(hspace=0.5)
 
     axs[0, 0].plot(t, x)
-    axs[0, 0].set_title("Horizontal Position")
+    axs[0, 0].set_title("Position Horizontale")
     axs[0, 0].set_xlabel("t (s)")
     axs[0, 0].set_ylabel("x (m)")
 
     axs[0, 1].plot(t, y)
-    axs[0, 1].set_title("Vertical Position")
+    axs[0, 1].set_title("Position Verticale")
     axs[0, 1].set_xlabel("t (s)")
-    axs[0, 1].set_ylabel("y (m)")
+    axs[0, 1].set_ylabel("z (m)")
 
     axs[1, 0].plot(t, theta)
-    axs[1, 0].set_title("Pitch Angle")
+    axs[1, 0].set_title("Angle θ")
     axs[1, 0].set_xlabel("t (s)")
-    axs[1, 0].set_ylabel("theta (rad)")
+    axs[1, 0].set_ylabel("θ (rad)")
 
     axs[1, 1].plot(x, y)
-    axs[1, 1].set_title("Trajectory")
+    axs[1, 1].set_title("Trajectoire")
     axs[1, 1].set_xlabel("x (m)")
-    axs[1, 1].set_ylabel("y (m)")
+    axs[1, 1].set_ylabel("z (m)")
 
+    
+    for ax in axs.flat:
+        ax.grid()
     plt.savefig("results.png")
     plt.show()
 
@@ -337,7 +341,7 @@ def main():
 
    
     plot_results(machine.temps,machine.x_data,machine.z_data,machine.theta_data)
-    
+   # plot_trajectory(machine.x_data,machine.z_data,machine.theta_data,machine.t_end,params)
 
   
 
