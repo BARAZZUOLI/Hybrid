@@ -65,7 +65,7 @@ class Hybrid_SYSTEM:
 
         self.t_start = 0
         self.t_end = 10
-        self.resolution = 100
+        self.resolution = 10000
         self.t_mode_0 = 0
         self.t_mode_1 = 0
         self.t_mode_2 = 0
@@ -147,6 +147,7 @@ class Hybrid_SYSTEM:
 
         self.flag = 0
         self.flag2 = 0
+        self.flag3 = 0
 
         self.F_g = self.params["m"] * self.params["g"]
 
@@ -155,17 +156,17 @@ class Hybrid_SYSTEM:
     afin de changer le mode du système hybride.
     """
 
-    def z_sup_50(self, t, y, params):
-        return y[1] - 50
+    def z_sup_501(self, t, y, params):
+        return y[1] - 501
 
-    z_sup_50.terminal = True
-    z_sup_50.direction = 1
+    z_sup_501.terminal = True
+    z_sup_501.direction = 1
 
-    def z_inf_50(self, t, y, params):
-        return y[1] + 50
+    def z_inf_500(self, t, y, params):
+        return y[1] - 500
 
-    z_inf_50.terminal = True
-    z_inf_50.direction = -1
+    z_inf_500.terminal = True
+    z_inf_500.direction = -1
 
     """
     Les évement suivant permmettent de stpopper l'intégration numérique lorsque la position x atteint 250m ou 300m,
@@ -209,6 +210,15 @@ class Hybrid_SYSTEM:
                 F1 = 0.5 * t - 0.01
                 F2 = 0.5 * t
 
+            case "3":
+                F1 = self.F_g
+                F2 = self.F_g
+
+            case "4":
+
+                F1 = self.F_g
+                F2 = self.F_g
+
         return [F1, F2]
 
     """Dynamique du système source: https://github.com/fpelogia/drone-simulation.git """
@@ -243,15 +253,20 @@ class Hybrid_SYSTEM:
 
                     """Mode 0"""
                     self.t_start = self.compteur * (1 / self.resolution)
-                    if self.compteur == 10:
+                    if self.compteur == (self.resolution - (self.resolution - 10)):
                         self.e0.succeed()
 
                 case "1":
 
                     """Mode 1"""
+                    for element in self.z_data:
+                        if element > 500:
+                            self.flag3 = 1
+                            self.e3.succeed()
+                            break
 
                     if (
-                        self.flag == 0
+                        self.flag == 0 and self.flag3 == 0
                     ):  # |---> Pour éviter de faire intégration numerique plusieur fois
                         self.flag = 1  # |
 
@@ -312,9 +327,13 @@ class Hybrid_SYSTEM:
                 case "2":
 
                     """Mode 2"""
-
+                    for element in self.z_data:
+                        if element > 500:
+                            self.flag3 = 1
+                            self.e3.succeed()
+                            break
                     if (
-                        self.flag == 1
+                        self.flag == 1 and self.flag3 == 0
                     ):  # |---> Pour éviter de faire intégration numerique plusieur fois
                         self.flag = 0  # |
 
@@ -369,6 +388,64 @@ class Hybrid_SYSTEM:
                         else:
                             print("Événement non détecté dans mode 0")
 
+                case "3":
+
+                    if (
+                        self.flag == 0
+                    ):  # |---> Pour éviter de faire intégration numerique plusieur fois
+                        self.flag = 1  # |
+
+                        self.t_mode_3 = np.linspace(
+                            self.t_start, self.t_end, self.resolution
+                        )
+
+                        sol3 = solve_ivp(
+                            self.drone_dynamics,  # Dynamique du système
+                            (
+                                self.t_start,
+                                self.t_end,
+                            ),  # intervalle de temps intégration numérique
+                            self.condition_initial,  # états du système (xdotdot,zdotdot,thetadotdot)
+                            method="RK45",  # Méthode d'intégration
+                            t_eval=self.t_mode_3,  # tab-->temps
+                            args=(self.params,),  # constante du système
+                            events=self.z_sup_501,  # Événement pour arrêter l'intégration numérique
+                            dense_output=True,  # S'il faut calculer une solution continue. La valeur par défaut est False
+                        )
+
+                        """mise à jour  des états aprés integration numérique """
+
+                        self.x, self.z, self.theta, self.Vx, self.Vz, self.Vtheta = (
+                            sol3.y
+                        )
+
+                        """stockage"""
+
+                        self.x_data = np.concatenate((self.x_data, self.x))
+                        self.z_data = np.concatenate((self.z_data, self.z))
+                        self.theta_data = np.concatenate((self.theta_data, self.theta))
+                        self.t_mode_3_data = sol3.t
+                        self.temps = np.concatenate((self.temps, self.t_mode_3_data))
+
+                        """Vérification si événement a eu lieu """
+
+                        if sol3.t_events[0].size > 0:
+
+                            self.e4.succeed()
+                            self.t_event = sol3.t_events[0][0]
+                            self.y_event = sol3.y_events[0][0]
+                            print(
+                                f"Événement détecté à t = {self.t_event:.2f} theta = {self.y_event[2]:.2f}"
+                            )
+
+                            # État initial pour le mode 2
+
+                            self.condition_initial = self.y_event
+                            self.t_start = self.t_event
+
+                        else:
+                            print("Événement non détecté dans mode 0")
+
             self.compteur += 1
             yield self.env.timeout(1)
 
@@ -399,36 +476,42 @@ class Hybrid_SYSTEM:
                     if (
                         self.flag2 == 1
                     ):  # |--> Pour éviter de print le mode 0 plusieur fois
-                        self.flag2 = 2  # |
 
                         print("--> mode[1]<--")
 
                     """Attente de l'évenement e1"""
 
-                    yield self.e1
-                    self.e1 = Event(self.env)
-                    self.mode = "2"
+                    yield self.e1 | self.e3
+
+                    if self.e1.triggered:
+                        self.flag2 = 2
+                        self.e1 = self.env.event()
+                        self.mode = "2"
+
+                    elif self.e3.triggered:
+                        self.flag2 = 3
+                        self.e3 = self.env.event()
+                        self.mode = "3"
 
                 case "2":
 
                     """Mode 2"""
 
                     if self.flag2 == 2:
-                        self.flag2 = 1
 
                         print("--> mode[2]<--")
 
-                    """Attente de l'évenement e2"""
+                    """Attente de l'évenement e2 ou e3"""
 
                     yield self.e2 | self.e3
 
                     if self.e2.triggered:
-
+                        self.flag2 = 1
                         self.e2 = self.env.event()
                         self.mode = "1"
 
                     elif self.e3.triggered:
-
+                        self.flag2 = 3
                         self.e3 = self.env.event()
                         self.mode = "3"
 
@@ -438,14 +521,12 @@ class Hybrid_SYSTEM:
 
                     if self.flag2 == 3:
                         self.flag2 = 4
-
                         print("--> mode[3]<--")
 
-                    """Attente de l'évenement e3"""
+                    """Attente de l'évenement e4"""
 
-                    yield self.e3
-                    self.e3 = Event(self.env)
-                    self.mode = "1"
+                    yield self.e4
+                    self.mode = "4"
 
                 case "4":
 
@@ -455,12 +536,6 @@ class Hybrid_SYSTEM:
                         self.flag2 = 5
 
                         print("--> mode[4]<--")
-
-                    """Attente de l'évenement e4"""
-
-                    yield self.e4
-                    self.e4 = Event(self.env)
-                    self.mode = "3"
 
             yield self.env.timeout(1)
 
@@ -573,7 +648,7 @@ def main():
     env.run(until=machine.resolution)
 
     if len(machine.temps) > 0 and len(machine.x_data) > 0:
-        print(f"DATA: {len(machine.x_data)} points")
+        print(f"ok")
         plot_results(machine.temps, machine.x_data, machine.z_data, machine.theta_data)
         plot_trajectory(
             machine.x_data, machine.z_data, machine.theta_data, machine.t_end, params
