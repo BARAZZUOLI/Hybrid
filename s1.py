@@ -55,6 +55,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.integrate import solve_ivp
 import matplotlib.animation as animation
+from math import pi 
 
 
 class Hybrid_SYSTEM:
@@ -64,8 +65,8 @@ class Hybrid_SYSTEM:
         # Temps
 
         self.t_start = 0
-        self.t_end = 10
-        self.resolution = 10000
+        self.t_end = 100
+        self.resolution = 1000000
         self.t_mode_0 = 0
         self.t_mode_1 = 0
         self.t_mode_2 = 0
@@ -137,6 +138,7 @@ class Hybrid_SYSTEM:
         self.e3 = Event(env)
         self.e4 = Event(env)
         self.e5 = Event(env)
+        self.e6 = Event(env)
 
         # Constantes système
 
@@ -150,23 +152,14 @@ class Hybrid_SYSTEM:
         self.flag3=0
 
         self.F_g = self.params["m"] * self.params["g"]
+        self.force_contraire=0
 
     """
     Les évement suivant permmettent de stpopper l'intégration numérique lorsque la position z atteint 50m ou 60m,
     afin de changer le mode du système hybride.
     """
 
-    def z_sup_501(self, t, y, params):
-        return y[1] - 100
-
-    z_sup_501.terminal = True
-    z_sup_501.direction = 1
-
-    def z_inf_500(self, t, y, params):
-        return y[1] - 500
-
-    z_inf_500.terminal = True
-    z_inf_500.direction = -1
+  
 
     """
     Les évement suivant permmettent de stpopper l'intégration numérique lorsque la position x atteint 250m ou 300m,
@@ -178,17 +171,45 @@ class Hybrid_SYSTEM:
     afin de changer le mode du système hybride.
     """
 
-    def theta_sup_pos_0_1_rad(self, t, y, params):
+    def theta_sup_pos_0_01_rad(self, t, y, params):
         return y[2] + 0.01
 
-    theta_sup_pos_0_1_rad.terminal = True
-    theta_sup_pos_0_1_rad.direction = 1
+    theta_sup_pos_0_01_rad.terminal = True
+    theta_sup_pos_0_01_rad.direction = 1
 
-    def theta_inf_neg_0_1_rad(self, t, y, params):
+    def theta_inf_neg_0_01_rad(self, t, y, params):
         return y[2] + 0.01
 
-    theta_inf_neg_0_1_rad.terminal = True
-    theta_inf_neg_0_1_rad.direction = -1
+    theta_inf_neg_0_01_rad.terminal = True
+    theta_inf_neg_0_01_rad.direction = -1
+
+
+    def theta_sup_pos_1_rad(self, t, y, params):
+        return y[2] + 3*pi/4
+
+    theta_sup_pos_1_rad.terminal = True
+    theta_sup_pos_1_rad.direction = 1
+    
+    def theta_inf_neg_1_rad(self, t, y, params):
+        return y[2] + 3*pi/4
+
+    theta_inf_neg_1_rad.terminal = True
+    theta_inf_neg_1_rad.direction = -1
+
+
+
+    def theta_egal_pi_rad(self, t, y, params):
+        return y[2] + pi/2
+
+    theta_egal_pi_rad.terminal = True
+    theta_egal_pi_rad.direction = -1
+    
+
+
+
+
+
+  
 
     """La Consigne U en fonction du mode de fonctionement de l'automate hybride"""
 
@@ -202,23 +223,32 @@ class Hybrid_SYSTEM:
 
             case "1":
 
-                F1 = 0.5 * t
-                F2 = 0.5 * t - 0.01
+                F1 =  t
+                F2 =  t - 0.001
 
             case "2":
 
-                F1 = 0.5 * t - 0.01
-                F2 = 0.5 * t
+               
+                F1 =  t- 0.001
+                F2 =  t 
 
             case "3":
-                F1 = -100
-                F2 =-100
+                F1 =  10.1
+                F2 =  10
+               
 
             case "4":
 
-                F1 = 100 * t
-                F2 = 100 * t - 0.01
+                 F1 =  t
+                 F2 =  t- 0.001 
 
+                
+            case "5":
+
+                 F1 =  t- 0.001
+                 F2 =  t 
+
+        
         return [F1, F2]
 
     """Dynamique du système source: https://github.com/fpelogia/drone-simulation.git """
@@ -258,15 +288,10 @@ class Hybrid_SYSTEM:
 
                 case "1":
 
-                        """Mode 1"""
-                        for element in self.z_data:
-                                if element > 500:
-                                    self.flag3=1
-                                    self.e3.succeed()
-                                    break
+                        
                         
                         if (
-                            self.flag == 0 and self.flag3==0
+                            self.flag == 0
                         ):  # |---> Pour éviter de faire intégration numerique plusieur fois
                             self.flag = 1  # |
 
@@ -286,7 +311,7 @@ class Hybrid_SYSTEM:
                                 method="RK45",  # Méthode d'intégration
                                 t_eval=self.t_mode_1,  # tab-->temps
                                 args=(self.params,),  # constante du système
-                                events=self.theta_inf_neg_0_1_rad,  # Événement pour arrêter l'intégration numérique
+                                events=self.theta_inf_neg_0_01_rad,  # Événement pour arrêter l'intégration numérique
                                 dense_output=True,  # S'il faut calculer une solution continue. La valeur par défaut est False
                             )
 
@@ -307,13 +332,17 @@ class Hybrid_SYSTEM:
                             """Vérification si événement a eu lieu """
 
                             if sol1.t_events[0].size > 0:
-
-                                self.e1.succeed()
                                 self.t_event = sol1.t_events[0][0]
                                 self.y_event = sol1.y_events[0][0]
 
+                                if self.y_event[1] >= 500:
+                                    self.e3.succeed()
+                                else:
+                                    self.e1.succeed()
+                                
+
                                 print(
-                                    f"mode 1 Événement détecté à t = {self.t_event:.2f} theta = {self.y_event[2]:.2f}"
+                                f"mode 1 Événement détecté à t = {self.t_event:.2f}, theta = {self.y_event[2]:.2f}, z = {self.y_event[1]:.2f}"
                                 )
 
                                 # État initial pour le mode 2
@@ -327,13 +356,9 @@ class Hybrid_SYSTEM:
                 case "2":
 
                     """Mode 2"""
-                    for element in self.z_data:
-                                if element > 500:
-                                    self.flag3=1
-                                    self.e3.succeed()
-                                    break
+                  
                     if (
-                        self.flag == 1 and self.flag3==0
+                        self.flag == 1 
                     ):  # |---> Pour éviter de faire intégration numerique plusieur fois
                         self.flag = 0  # |
 
@@ -351,7 +376,7 @@ class Hybrid_SYSTEM:
                             method="RK45",  # Méthode d'intégration
                             t_eval=self.t_mode_2,  # tab-->temps
                             args=(self.params,),  # constante du système
-                            events=self.theta_sup_pos_0_1_rad,  # Événement pour arrêter l'intégration numérique
+                            events=self.theta_sup_pos_0_01_rad,  # Événement pour arrêter l'intégration numérique
                             dense_output=True,  # S'il faut calculer une solution continue. La valeur par défaut est False
                         )
 
@@ -371,13 +396,16 @@ class Hybrid_SYSTEM:
                         """Vérification si événement a eu lieu """
 
                         if sol2.t_events[0].size > 0:
-
-                            self.e2.succeed()
+                            
                             self.t_event = sol2.t_events[0][0]
                             self.y_event = sol2.y_events[0][0]
+                            if self.y_event[1] >= 500:
+                                    self.e3.succeed()
+                            else:
+                                    self.e2.succeed()
 
                             print(
-                                f"mode 2 Événement détecté à t = {self.t_event:.2f} theta = {self.y_event[2]:.2f}"
+                                f"mode 2 Événement détecté à t = {self.t_event:.2f}, theta = {self.y_event[2]:.2f}, z = {self.y_event[1]:.2f}"
                             )
 
                             # État initial pour le mode 2
@@ -389,11 +417,14 @@ class Hybrid_SYSTEM:
                             print("Événement non détecté dans mode 2")
 
                 case "3":
-
+                   
                     if (
-                        self.flag == 0
+                        self.flag == 0 or self.flag==1
                     ):  # |---> Pour éviter de faire intégration numerique plusieur fois
                         self.flag = 1  # |
+
+
+                       
 
                         self.t_mode_3= np.linspace(
                             self.t_start, self.t_end, self.resolution
@@ -409,8 +440,8 @@ class Hybrid_SYSTEM:
                             method="RK45",  # Méthode d'intégration
                             t_eval=self.t_mode_3,  # tab-->temps
                             args=(self.params,),  # constante du système
-                            events=self.z_sup_501,  # Événement pour arrêter l'intégration numérique
-                            dense_output=True,  # S'il faut calculer une solution continue. La valeur par défaut est False
+                           events=self.theta_egal_pi_rad,  # Événement pour arrêter l'intégration numérique
+                           dense_output=True,  # S'il faut calculer une solution continue. La valeur par défaut est False
                            
                         )
 
@@ -430,14 +461,14 @@ class Hybrid_SYSTEM:
 
 
                         """Vérification si événement a eu lieu """
-
+#                       
                         if sol3.t_events[0].size > 0:
 
                             self.e4.succeed()
                             self.t_event = sol3.t_events[0][0]
                             self.y_event = sol3.y_events[0][0]
                             print(
-                                f"mode 3 Événement détecté à t = {self.t_event:.2f} z = {self.y_event[2]:.2f}"
+                                f"mode 3 Événement détecté à t = {self.t_event:.2f}, theta = {self.y_event[2]:.2f}, z = {self.y_event[1]:.2f}"
                             )
 
                             # État initial pour le mode 2
@@ -447,13 +478,12 @@ class Hybrid_SYSTEM:
 
                         else:
                             print("Événement non détecté dans mode 3")
-
                 case "4":
 
                     if (
-                        self.flag == 0
+                        self.flag == 1
                     ):  # |---> Pour éviter de faire intégration numerique plusieur fois
-                        self.flag = 1  # |
+                        self.flag = 0  # |
 
                         self.t_mode_4= np.linspace(
                             self.t_start, self.t_end, self.resolution
@@ -469,7 +499,7 @@ class Hybrid_SYSTEM:
                             method="RK45",  # Méthode d'intégration
                             t_eval=self.t_mode_4,  # tab-->temps
                             args=(self.params,),  # constante du système
-                            events=self.z_inf_500,  # Événement pour arrêter l'intégration numérique
+                            events=self.theta_inf_neg_1_rad,  # Événement pour arrêter l'intégration numérique
                             dense_output=True,  # S'il faut calculer une solution continue. La valeur par défaut est False
                            
                         )
@@ -485,8 +515,8 @@ class Hybrid_SYSTEM:
                         self.x_data = np.concatenate((self.x_data, self.x))
                         self.z_data = np.concatenate((self.z_data, self.z))
                         self.theta_data = np.concatenate((self.theta_data, self.theta))
-                        self.t_mode_3_data = sol3.t
-                        self.temps = np.concatenate((self.temps, self.t_mode_3_data))
+                        self.t_mode_4_data = sol4.t
+                        self.temps = np.concatenate((self.temps, self.t_mode_4_data))
 
 
                         """Vérification si événement a eu lieu """
@@ -497,7 +527,67 @@ class Hybrid_SYSTEM:
                             self.t_event = sol4.t_events[0][0]
                             self.y_event = sol4.y_events[0][0]
                             print(
-                                f"mode 4 Événement détecté à t = {self.t_event:.2f} z = {self.y_event[2]:.2f}"
+                                f"mode 4 Événement détecté à t = {self.t_event:.2f}, theta = {self.y_event[2]:.2f}, z = {self.y_event[1]:.2f}"
+                            )
+
+                            # État initial pour le mode 2
+
+                            self.condition_initial = self.y_event
+                            self.t_start = self.t_event
+
+                        else:
+                            print("Événement non détecté dans mode 4")
+
+                case "5":
+
+                    if (
+                        self.flag == 0
+                    ):  # |---> Pour éviter de faire intégration numerique plusieur fois
+                        self.flag = 0  # |
+
+                        self.t_mode_5= np.linspace(
+                            self.t_start, self.t_end, self.resolution
+                        )
+
+                        sol5 = solve_ivp(
+                            self.drone_dynamics,  # Dynamique du système
+                            (
+                                self.t_start,
+                                self.t_end,
+                            ),  # intervalle de temps intégration numérique
+                            self.condition_initial,  # états du système (xdotdot,zdotdot,thetadotdot)
+                            method="RK45",  # Méthode d'intégration
+                            t_eval=self.t_mode_5,  # tab-->temps
+                            args=(self.params,),  # constante du système
+                            events=self.theta_sup_pos_1_rad,  # Événement pour arrêter l'intégration numérique
+                            dense_output=True,  # S'il faut calculer une solution continue. La valeur par défaut est False
+                           
+                        )
+
+                        """mise à jour  des états aprés integration numérique """
+
+                        self.x, self.z, self.theta, self.Vx, self.Vz, self.Vtheta = (
+                            sol5.y
+                        )
+
+                        """stockage"""
+
+                        self.x_data = np.concatenate((self.x_data, self.x))
+                        self.z_data = np.concatenate((self.z_data, self.z))
+                        self.theta_data = np.concatenate((self.theta_data, self.theta))
+                        self.t_mode_5_data = sol5.t
+                        self.temps = np.concatenate((self.temps, self.t_mode_5_data))
+
+
+                        """Vérification si événement a eu lieu """
+
+                        if sol5.t_events[0].size > 0:
+
+                            self.e6.succeed()
+                            self.t_event = sol5.t_events[0][0]
+                            self.y_event = sol5.y_events[0][0]
+                            print(
+                               f"mode 5 Événement détecté à t = {self.t_event:.2f}, theta = {self.y_event[2]:.2f}, z = {self.y_event[1]:.2f}"
                             )
 
                             # État initial pour le mode 2
@@ -605,10 +695,26 @@ class Hybrid_SYSTEM:
 
                         print("--> mode[4]<--")
 
-                    """Attente de l'évenement e4"""
+                    """Attente de l'évenement e5"""
 
                     yield self.e5
                     self.e5 = self.env.event()
+                    self.mode = "5"
+
+
+                case "5":
+
+                    """Mode 5"""
+
+                    if self.flag2 == 4:
+                        self.flag2 = 3
+
+                        print("--> mode[4]<--")
+
+                    """Attente de l'évenement e6"""
+
+                    yield self.e6
+                    self.e6 = self.env.event()
                     self.mode = "4"
                     
 
@@ -664,7 +770,7 @@ def plot_trajectory(x, y, theta, t_end, params):
 
     # CrÃ©er le patch du drone
     drone_width = L
-    drone_height = 0.2
+    drone_height = 0.2*50
     patch = plt.Rectangle(
         (0, 0), drone_width, drone_height, angle=0, color="r", alpha=0.8
     )
