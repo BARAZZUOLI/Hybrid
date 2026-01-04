@@ -1,0 +1,6 @@
+# Exemple de fichier de points
+# Format: x,y
+0,0
+300,500
+700,500
+1000,0

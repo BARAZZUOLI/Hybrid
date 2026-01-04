@@ -56,6 +56,7 @@ import numpy as np
 from scipy.integrate import solve_ivp
 import matplotlib.animation as animation
 from math import pi 
+import random
 
 
 class Hybrid_SYSTEM:
@@ -151,6 +152,7 @@ class Hybrid_SYSTEM:
         self.F2 = 0
         self.F3 = 0
         self.F4 = 0
+        self.FP = 0
 
         self.flag = 0
         self.flag2 = 0
@@ -162,7 +164,7 @@ class Hybrid_SYSTEM:
 
     def u(self, t):
         # Initialisation par défaut
-        F1 = F2 = F3 = F4 = 0
+        F1 = F2 = F3 = F4 = FP = 0
         
         match self.mode:
             case "0":
@@ -170,41 +172,54 @@ class Hybrid_SYSTEM:
                 F2 = self.F_g
                 F3 = 0
                 F4 = 0
+                FP=0
             case "1":
                 F1 = 10*self.F_g + 0.01
                 F2 = 10*self.F_g
                 F3 = 0
                 F4 = 0
+                FP=0
             case "2":
                 F1 = 10*self.F_g
                 F2 = 10*self.F_g + 0.01
                 F3 = 0
                 F4 = 0
+                FP=0
             case "3":
             
                 F1=self.F_g
                 F2=self.F_g
                 F3=0.01 
                 F4=0
+                FP=0
             case "4":
                 F1 = -self.F_g
                 F2 = -self.F_g-0.01
                 F3 = 0
                 F4 = 0
+                FP=0
             case "5":
                 F1 = -self.F_g-0.01
                 F2 = -self.F_g
                 F3 = 0
                 F4 = 0
+                FP = 0
             case '6':
                 F1 = self.F_g
                 F2 = self.F_g
                 F3 = 0
                 F4 = 0
+                FP = 0
+            case '7':
+                F1=self.F_g
+                F2=self.F_g
+                F3=0.01 
+                F4=0
+                FP=10
 
 
 
-        return [F1, F2, F3, F4]
+        return [F1, F2, F3, F4,FP]
 
     """Dynamique du système source: https://github.com/fpelogia/drone-simulation.git """
 
@@ -212,7 +227,7 @@ class Hybrid_SYSTEM:
 
         self.x, self.z, self.theta, self.Vx, self.Vz, self.Vtheta = state
 
-        self.F1, self.F2, self.F3, self.F4 = self.u(t)
+        self.F1, self.F2, self.F3, self.F4,self.FP = self.u(t)
 
         self.m = params["m"]
         self.I = params["I"]
@@ -221,7 +236,8 @@ class Hybrid_SYSTEM:
 
         self.Ax = -(((self.F1 + self.F2) * np.sin(self.theta)) / self.m )+((self.F3 - self.F4)/self.m)
             
-        self.Az = ((self.F1 + self.F2) * np.cos(self.theta)) / self.m - self.g
+        self.Az = (((self.F1 + self.F2) * np.cos(self.theta)) / self.m) - (self.g) -(self.FP/self.m)
+
         self.Atheta = ((self.F2 - self.F1) * self.L) / (2 * self.I)
 
         dot_state = [self.Vx, self.Vz, self.Vtheta, self.Ax, self.Az, self.Atheta]
@@ -240,11 +256,25 @@ class Hybrid_SYSTEM:
     theta_inf_neg_0_01_rad.terminal = True # type: ignore
     theta_inf_neg_0_01_rad.direction = -1 # type: ignore
 
-    def x_sup_2000_rad(self, t, y, params):
-        return y[0] - 1
+    def x_sup_val(self, t, y, params):
+        return y[0] - 35
+    
+    x_sup_val.terminal = True # type: ignore
+    x_sup_val.direction = 1 # type: ignore
 
-    x_sup_2000_rad.terminal = True # type: ignore
-    x_sup_2000_rad.direction = 1 # type: ignore
+    def perturbation(self, t, y, params):
+        return y[0] - 25
+
+    perturbation.terminal = True # type: ignore
+    perturbation.direction = 1 # type: ignore
+
+
+
+    def z_egal_40(self, t, y, params):
+        return y[1] - 40
+
+    z_egal_40.terminal = True # type: ignore
+    z_egal_40.direction = -1 # type: ignore
 
     
     """Dynamique continue du système hybride """
@@ -345,45 +375,59 @@ class Hybrid_SYSTEM:
 
                 case "3":
                     """Mode 3"""
-                    
                     if self.flag == 0 or self.flag == 1:
-                        self.flag = 5
-                        self.condition_initial = self.y_event[0], self.y_event[1], 0, 0, 0, 0
-                        self.t_mode_3 = np.linspace(self.t_start, self.t_end, self.resolution)
-                        sol3 = solve_ivp(
-                            self.drone_dynamics,
-                            (self.t_start, self.t_end),
-                            self.condition_initial,
-                            method="RK45",
-                            t_eval=self.t_mode_3,
-                            args=(self.params,),
-                            events=self.x_sup_2000_rad,
-                            dense_output=True,
-                        )
+                         self.flag = 5
+                         self.condition_initial = self.y_event[0], self.y_event[1], 0, 0, 0, 0
+                         self.t_mode_3 = np.linspace(self.t_start, self.t_end, self.resolution)
 
-                        self.x, self.z, self.theta, self.Vx, self.Vz, self.Vtheta = sol3.y
-                   
-                        self.x_data = np.concatenate((self.x_data, self.x))
-                        self.z_data = np.concatenate((self.z_data, self.z))
-                        self.theta_data = np.concatenate((self.theta_data, self.theta))
-                        self.Vx_data = np.concatenate((self.Vx_data, self.Vx))
-                        self.Vz_data = np.concatenate((self.Vz_data, self.Vz))
-                        self.Vtheta_data = np.concatenate((self.Vtheta_data, self.Vtheta))
-                        
-                        self.t_mode_3_data = sol3.t
-                        self.temps = np.concatenate((self.temps, self.t_mode_3_data))
+                         sol3 = solve_ivp(
+                             self.drone_dynamics,
+                             (self.t_start, self.t_end),
+                             self.condition_initial,
+                             method="RK45",
+                             t_eval=self.t_mode_3,
+                             args=(self.params,),
+                             events=[self.x_sup_val, self.perturbation],
+                             dense_output=True,
+                         )
 
+                      
+                         self.x, self.z, self.theta, self.Vx, self.Vz, self.Vtheta = sol3.y
 
-                        if len(sol3.t_events) > 0 and sol3.t_events[0].size > 0:
-                            self.t_event = sol3.t_events[0][0]
-                            self.y_event = sol3.y_events[0][0]
-                           
-                            self.e4.succeed()
-                            print(f"mode 3 Événement détecté à t = {self.t_event:.2f}, x = {self.y_event[0]:.2f}, z = {self.y_event[1]:.2f}, theta = {self.y_event[2]:.2f}")
-                            self.condition_initial = self.y_event
-                            self.t_start = self.t_event
-                        else:
-                            print("Événement non détecté dans mode 3")
+                         self.x_data = np.concatenate((self.x_data, self.x))
+                         self.z_data = np.concatenate((self.z_data, self.z))
+                         self.theta_data = np.concatenate((self.theta_data, self.theta))
+                         self.Vx_data = np.concatenate((self.Vx_data, self.Vx))
+                         self.Vz_data = np.concatenate((self.Vz_data, self.Vz))
+                         self.Vtheta_data = np.concatenate((self.Vtheta_data, self.Vtheta))
+
+                         self.t_mode_3_data = sol3.t
+                         self.temps = np.concatenate((self.temps, self.t_mode_3_data))
+
+                         # Gestion des événements détectés
+                         event_detected = False
+                         if len(sol3.t_events) > 0:
+                             for idx, event in enumerate(sol3.t_events):
+                                 if event.size > 0:
+                                     self.t_event = event[0]
+                                     self.y_event = sol3.y_events[idx][0]
+                                     event_detected = True
+
+                                     if idx == 1:  # Première condition d'événement
+                                         self.e8.succeed()
+                                         self.flag = 9
+                                         self.condition_initial = self.y_event
+                                         self.t_start = self.t_event
+                                     elif idx == 0:  # Deuxième condition d'événement
+                                         self.e4.succeed()
+                                         print(f"mode 3 Événement perturbation détecté à t = {self.t_event:.2f}, x = {self.y_event[0]:.2f}, z = {self.y_event[1]:.2f}, theta = {self.y_event[2]:.2f}")
+                                         self.condition_initial = self.y_event
+                                         self.t_start = self.t_event
+                                     break
+                                 
+                         if not event_detected:
+                             print("Aucun événement détecté dans mode 3")
+
 
                 case "4":
                     """Mode 4 """
@@ -496,13 +540,47 @@ class Hybrid_SYSTEM:
 
                         self.t_mode_6_data = sol6.t
                         self.temps = np.concatenate((self.temps, self.t_mode_6_data))
-                        print(f"mode 6 Événement détecté à t = {self.t_event:.2f}, x = {self.y_event[0]:.2f}, z = {self.y_event[1]:.2f}, theta = {self.y_event[2]:.2f}")
                             
 
+                case "7":
+
+                    if self.flag == 9:
+                        self.flag=0
+                       
+                        self.t_mode_7 = np.linspace(self.t_start, self.t_end, self.resolution)
+                        sol7 = solve_ivp(
+                            self.drone_dynamics,
+                            (self.t_start, self.t_end),
+                            self.condition_initial,
+                            method="RK45",
+                            t_eval=self.t_mode_7,
+                            args=(self.params,),
+                             events=self.z_egal_40,
+                            dense_output=True,
+                            
+                        )
+                        self.x, self.z, self.theta, self.Vx, self.Vz, self.Vtheta = sol7.y
+
+                        self.x_data = np.concatenate((self.x_data, self.x))
+                        self.z_data = np.concatenate((self.z_data, self.z))
+                        self.theta_data = np.concatenate((self.theta_data, self.theta))
+                        self.Vx_data = np.concatenate((self.Vx_data, self.Vx))
+                        self.Vz_data = np.concatenate((self.Vz_data, self.Vz))
+                        self.Vtheta_data = np.concatenate((self.Vtheta_data, self.Vtheta))
+
+                        self.t_mode_7_data = sol7.t
+                        self.temps = np.concatenate((self.temps, self.t_mode_7_data))
+                        if len(sol7.t_events) > 0 and sol7.t_events[0].size > 0:
+                            self.t_event = sol7.t_events[0][0]
+                            self.y_event = sol7.y_events[0][0]
+                            self.e9.succeed()
+                            print(f"mode 7 Événement détecté à t = {self.t_event:.2f}, x = {self.y_event[0]:.2f}, z = {self.y_event[1]:.2f}, theta = {self.y_event[2]:.2f}")
+                            self.condition_initial = self.y_event[0],self.y_event[1],0,0,0,0
+                            self.t_start = self.t_event
+                        else:
+                            print("Événement non détecté dans mode 7")
                     
                     
-
-
             self.compteur += 1
             yield self.env.timeout(1)
 
@@ -541,7 +619,7 @@ class Hybrid_SYSTEM:
                         self.mode = "3"
                 case "3":
                     if self.flag2 == 3:
-                        self.flag2 = 4
+                        
                         pass
                     yield self.e4|self.e8
                     if self.e4.triggered:
@@ -586,6 +664,15 @@ class Hybrid_SYSTEM:
                         pass
 
 
+                case "7":
+                    if self.flag2 == 7:
+                       
+                        pass
+
+                    yield self.e9
+                    self.e9 = self.env.event()
+                    self.mode = "1" 
+                    
                    
                    
 
@@ -667,7 +754,6 @@ def plot_all_results(t, x, z, theta, Vx, Vz, Vtheta):
 
 
 
-
 def main():
     m = 0.01  # kg
     L = 0.086  # m (86 mm, ajusté pour un drone plus réaliste)
@@ -693,6 +779,7 @@ def main():
         plt.grid()
         plt.savefig("altitude_vs_temps.png")
         plt.show()
+       
     else:
         print("Aucune donnee generee par la simulation")
 #----------------------------------------------------------------------------------------------------------------------------------------------------------
