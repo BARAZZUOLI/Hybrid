@@ -65,7 +65,7 @@ class Hybrid_SYSTEM:
         # Temps
 
         self.t_start = 0
-        self.t_end = 800
+        self.t_end = 1000
         self.resolution = 1000
         self.t_mode_0 = 0
         self.t_mode_1 = 0
@@ -170,29 +170,29 @@ class Hybrid_SYSTEM:
                 F3 = 0
                 F4 = 0
             case "1":
-                F1 = self.F_g + 0.01
-                F2 = self.F_g
+                F1 = 10*self.F_g + 0.01
+                F2 = 10*self.F_g
                 F3 = 0
                 F4 = 0
             case "2":
-                F1 = self.F_g
-                F2 = self.F_g + 0.01
+                F1 = 10*self.F_g
+                F2 = 10*self.F_g + 0.01
                 F3 = 0
                 F4 = 0
             case "3":
             
                 F1=self.F_g
                 F2=self.F_g
-                F3=100
+                F3=0.01
                 F4=0
             case "4":
-                F1 = -self.F_g
-                F2 = -self.F_g-0.01
+                F1 = self.F_g
+                F2 = self.F_g-0.01
                 F3 = 0
                 F4 = 0
             case "5":
-                F1 = -self.F_g-0.01
-                F2 = -self.F_g
+                F1 = self.F_g-0.01
+                F2 = self.F_g
                 F3 = 0
                 F4 = 0
 
@@ -212,7 +212,7 @@ class Hybrid_SYSTEM:
         self.L = params["L"]
         self.g = params["g"]
 
-        self.Ax = -(((self.F1 + self.F2) * np.sin(self.theta)) / self.m )+(self.F3 - self.F4)
+        self.Ax = -(((self.F1 + self.F2) * np.sin(self.theta)) / self.m )+((self.F3 - self.F4)/self.m)
         self.Az = ((self.F1 + self.F2) * np.cos(self.theta)) / self.m - self.g
         self.Atheta = ((self.F2 - self.F1) * self.L) / (2 * self.I)
 
@@ -232,7 +232,7 @@ class Hybrid_SYSTEM:
     theta_inf_neg_0_01_rad.direction = -1 # type: ignore
 
     def x_sup_2000_rad(self, t, y, params):
-        return y[0] - 50
+        return y[0] - 1
 
     x_sup_2000_rad.terminal = True # type: ignore
     x_sup_2000_rad.direction = 1 # type: ignore
@@ -281,7 +281,7 @@ class Hybrid_SYSTEM:
                             self.y_event = sol1.y_events[0][0]
                             if self.y_event[1] > 50:
                                 self.e3.succeed()
-                                self.condition_initial = self.y_event[0], self.y_event[1], 0, 0, 0, 0
+                        
                                 self.t_start = self.t_event
                             else:
                                 self.e1.succeed()
@@ -323,7 +323,7 @@ class Hybrid_SYSTEM:
                             self.y_event = sol2.y_events[0][0]
                             if self.y_event[1] > 50:
                                 self.e3.succeed()
-                                self.condition_initial = self.y_event[0], self.y_event[1], 0, 0, 0, 0
+                                
                                 self.t_start = self.t_event
                             else:
                                 self.e2.succeed()
@@ -351,6 +351,7 @@ class Hybrid_SYSTEM:
                             events=self.x_sup_2000_rad,
                             dense_output=True,
                         )
+
                         self.x, self.z, self.theta, self.Vx, self.Vz, self.Vtheta = sol3.y
                    
                         self.x_data = np.concatenate((self.x_data, self.x))
@@ -367,10 +368,8 @@ class Hybrid_SYSTEM:
                         if len(sol3.t_events) > 0 and sol3.t_events[0].size > 0:
                             self.t_event = sol3.t_events[0][0]
                             self.y_event = sol3.y_events[0][0]
-                            if self.y_event[0] >= 25:
-                                self.e4.succeed()
-                                
-                        
+                           
+                            self.e4.succeed()
                             print(f"mode 3 Événement détecté à t = {self.t_event:.2f}, x = {self.y_event[0]:.2f}, z = {self.y_event[1]:.2f}, theta = {self.y_event[2]:.2f}")
                             self.condition_initial = self.y_event[0], self.y_event[1], 0, 0, 0, 0
                             self.t_start = self.t_event
