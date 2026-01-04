@@ -183,16 +183,16 @@ class Hybrid_SYSTEM:
             
                 F1=self.F_g
                 F2=self.F_g
-                F3=0.01
+                F3=0.01 
                 F4=0
             case "4":
-                F1 = self.F_g
-                F2 = self.F_g-0.01
+                F1 = -self.F_g
+                F2 = -self.F_g-0.01
                 F3 = 0
                 F4 = 0
             case "5":
-                F1 = self.F_g-0.01
-                F2 = self.F_g
+                F1 = -self.F_g-0.01
+                F2 = -self.F_g
                 F3 = 0
                 F4 = 0
 
@@ -213,6 +213,7 @@ class Hybrid_SYSTEM:
         self.g = params["g"]
 
         self.Ax = -(((self.F1 + self.F2) * np.sin(self.theta)) / self.m )+((self.F3 - self.F4)/self.m)
+            
         self.Az = ((self.F1 + self.F2) * np.cos(self.theta)) / self.m - self.g
         self.Atheta = ((self.F2 - self.F1) * self.L) / (2 * self.I)
 
@@ -371,7 +372,7 @@ class Hybrid_SYSTEM:
                            
                             self.e4.succeed()
                             print(f"mode 3 Événement détecté à t = {self.t_event:.2f}, x = {self.y_event[0]:.2f}, z = {self.y_event[1]:.2f}, theta = {self.y_event[2]:.2f}")
-                            self.condition_initial = self.y_event[0], self.y_event[1], 0, 0, 0, 0
+                            self.condition_initial = self.y_event
                             self.t_start = self.t_event
                         else:
                             print("Événement non détecté dans mode 3")
